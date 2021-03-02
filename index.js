@@ -1,14 +1,11 @@
-"use strict";
+'use strict';
 
-const Boom = require("boom"),
-  sass = require("node-sass"),
-  Hoek = require("hoek"),
-  fs = require("fs"),
-  dirname = require("path").dirname,
-  mkdirp = require("mkdirp"),
-  join = require("path").join;
+const Boom = require('boom'), sass = require('node-sass'),
+      Hoek = require('hoek'), fs = require('fs'),
+      dirname = require('path').dirname, mkdirp = require('mkdirp'),
+      join = require('path').join;
 
-const { promisify } = require("util");
+const {promisify} = require('util');
 
 const sassRenderAsync = promisify(sass.render);
 const writeFileAsync = promisify(fs.writeFile);
@@ -19,16 +16,16 @@ const internals = {
     /* https://github.com/sass/node-sass#options */
     debug: false,
     force: false,
-    src: "./lib/sass",
-    dest: "./public/css",
-    routePath: "/css/{file}.css",
-    outputStyle: "compressed",
-    sourceComments: "none",
-    srcExtension: "scss"
+    src: './lib/sass',
+    dest: './public/css',
+    routePath: '/css/{file}.css',
+    outputStyle: 'compressed',
+    sourceComments: 'none',
+    srcExtension: 'scss'
   },
 
   error: function(h, err) {
-    if (err.code === "ENOENT") {
+    if (err.code === 'ENOENT') {
       return Boom.notFound();
     } else {
       return Boom.internal(err);
@@ -37,7 +34,7 @@ const internals = {
 
   log: function() {
     const args = Array.prototype.slice.call(arguments);
-    args[0] = "[hapi-sass] " + args[0];
+    args[0] = '[hapi-sass] ' + args[0];
     console.log.apply(console, args);
   }
 };
@@ -61,32 +58,24 @@ exports.plugin = {
     const dest = settings.dest ? settings.dest : src;
 
     server.route({
-      method: "GET",
+      method: 'GET',
       path: settings.routePath,
-      config: {
-        files: {
-          relativeTo: "./"
-        }
-      },
+      config: {files: {relativeTo: './'}},
       handler: async function(request, h) {
-        const cssPath = join(dest, request.params.file + ".css"),
-          sassPath = join(
-            src,
-            request.params.file + "." + settings.srcExtension
-          ),
-          sassDir = dirname(sassPath);
+        const cssPath = join(dest, request.params.file + '.css'),
+              sassPath =
+                  join(src, request.params.file + '.' + settings.srcExtension),
+              sassDir = dirname(sassPath);
 
         if (debug) {
-          internals.log("Processing Request with values: %j", {
-            sassPath: sassPath,
-            dest: dest,
-            sassDir: sassDir
-          });
+          internals.log(
+              'Processing Request with values: %j',
+              {sassPath: sassPath, dest: dest, sassDir: sassDir});
         }
 
         const compile = async () => {
           if (debug) {
-            internals.log("Compiling Sass at %s", sassPath);
+            internals.log('Compiling Sass at %s', sassPath);
           }
 
           const results = await sassRenderAsync({
@@ -102,25 +91,25 @@ exports.plugin = {
           if (err) {
             if (debug) {
               let message = err.formatted ? err.formatted : err.message;
-              internals.log("Compilation failed: %s", message);
+              internals.log('Compilation failed: %s', message);
             }
             return internals.error(h, err);
           }
 
           if (debug) {
-            internals.log("Compilation ok");
+            internals.log('Compilation ok');
           }
 
           let errMk = await mkdirp(dirname(cssPath), 0x1c0);
           if (errMk) {
             return errMk;
           }
-          let errFs = await writeFileAsync(cssPath, results.css, "utf8");
+          let errFs = await fs.writeFile(cssPath, results.css, function() {});
 
           if (errFs && debug) {
-            internals.log("Error writing file - %s", errFs.message);
+            internals.log('Error writing file - %s', errFs.message);
           }
-          return h.response(results.css).type("text/css");
+          return h.response(results.css).type('text/css');
         };
 
         if (force) {
@@ -137,9 +126,9 @@ exports.plugin = {
         try {
           cssStats = await stat(cssPath);
         } catch (err) {
-          if (err.code === "ENOENT") {
+          if (err.code === 'ENOENT') {
             if (debug) {
-              internals.log("Compiled file not found, compiling %s", cssPath);
+              internals.log('Compiled file not found, compiling %s', cssPath);
             }
             return compile();
           } else {
@@ -151,13 +140,13 @@ exports.plugin = {
         if (sassStats.mtime.getTime() > cssStats.mtime.getTime()) {
           // the sass version is newer
           if (debug) {
-            internals.log("Sass file is newer, compiling %s", cssPath);
+            internals.log('Sass file is newer, compiling %s', cssPath);
           }
           return compile();
         } else {
           // serve
           if (debug) {
-            internals.log("Compiled file found and up to date. Serving");
+            internals.log('Compiled file found and up to date. Serving');
           }
           return h.file(cssPath);
         }
@@ -165,8 +154,8 @@ exports.plugin = {
     });
   },
   multiple: true,
-  dependencies: "inert",
-  name: "hapi-sass",
-  pkg: require("./package.json"),
-  version: require("./package.json").version
+  dependencies: 'inert',
+  name: 'hapi-sass',
+  pkg: require('./package.json'),
+  version: require('./package.json').version
 };
